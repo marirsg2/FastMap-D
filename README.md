@@ -1,3 +1,4 @@
 FastmapD code:
-Companion Paper: http://idm-lab.org/bib/abstracts/Koen20p.html
+Companion Paper: "Embedding Directed Graphs in Potential Fields Using FastMap-D"
+Paper in the repository
 
