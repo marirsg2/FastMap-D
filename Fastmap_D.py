@@ -27,7 +27,7 @@ NO_PIVOTS_CONSTRAINT_WEIGHT = 1.0
 MIN_ADDITIONAL_NODES = 10
 
 TRUE_AVG_DIST_IN_POT_FUNC = False
-#todo NOTE so this is an interesting switch to try. When true, the pot function is
+#NOTE so this is an interesting switch to try. When true, the pot function is
 # just about learning the true difference between average and directed distance. In this
 # the error from average distance is not carried over to be compensated in the pot func.
 # In some cases, this works well, when average embedding is mediocre and only makes the
@@ -145,9 +145,7 @@ def compute_NRMSD_distortion(in_graph, inv_graph, poly_terms, resultant_weights,
             # output = np.sum(np.array( constraint_vector_as_list) * resultant_weights) + bias
             # output2 = np.sum(np.array( inv_constaint_vector) * resultant_weights) + bias
 
-            #todo NOTE: we do bidirectional here because a->b is not b->a !!
-            #compare the effect of the potential field. How much better is it, statistics
-            #the TRUE (target) value is = shortest_path_dict[vertex_1][vertex_2]+ average_toFro_dict[vertex_1][vertex_2]
+            
             distance_1 = short_path_tree[vertex_2]
             distance_2 = inv_short_path_tree[vertex_2]
             delta_1 = distance_1 - (output+ np.linalg.norm(np.array(vertex_embedding_dict[vertex_1]) - np.array(vertex_embedding_dict[vertex_2])))
@@ -197,8 +195,7 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
     vertex_embedding_dict = {}
     pivot_pairs = []
     average_toFro_dict = {}
-    #todo IMPORTANT: If Disconnected(a,b) and Disconnected(b,a), they will have twice
-    # the avg distance as a pair of nodes that are disconnected only one way.
+    
     #---NOW first initialize the embeddings to empty list
 
     for single_v in all_vertices_set:
@@ -230,9 +227,7 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
             index_max = list_distDiff.index(max(list_distDiff))
             vertex_max = remainder_vertices[index_max]
             if vertex_max == vertex_b: #the furthest vertex_i was vertex_b, so we reached a local max
-                #todo NOTE usually we just break out at this point, and do the following code outside of the encasing for loop for pivot search
-                # but ! some maps have points that are very close and all distance has been embedded,
-                # and we see a NEGATIVE difference in sq distance between true and embedding distance, needs more debugging
+                
                 embedding_a = np.array(vertex_embedding_dict[vertex_a])
                 embedding_b = np.array(vertex_embedding_dict[vertex_b])
                 # ---compute the avg to fro and shortest paths for vertex b
@@ -256,9 +251,7 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
                 distSqDiff_ab = distAvgSq_ab - np.sum(
                     np.square(embedding_b - embedding_a))  # order does not matter, it is for to-fro distance
                 try:
-                    #todo SOMETIMES we may get unlucky in the random search for pivots, and ab maybe quite near, and all the other edges have distances accounted for.
-                    # so the pivot search couldnt escape the local small maxima. One solution is to catch the sudden drop in dist_left (Say it was 1000, 800, 2.3), and restart. Allow restart a fixed
-                    # number of times.
+                    
                     dist_left_ab = math.sqrt(distSqDiff_ab)
                     break  # if we succeeded break out of the for loop through pivot search attempts
                 except:
@@ -274,7 +267,7 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
                 print("PIVOT SEARCH ATTEMPTS MAXED OUT  t == pivot_search_attempts-1")
         #end for loop through pivot search attempts
         #---
-        #TODO note this repeat of code is NECESSARY. We may not have found a stable pivot, but stopped after t attempts
+        
         embedding_a = np.array(vertex_embedding_dict[vertex_a])
         embedding_b = np.array(vertex_embedding_dict[vertex_b])
         # ---compute the avg to fro and shortest paths for vertex b
@@ -356,15 +349,14 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
 
     # --- lets determine the terms of the polynomial and a mapping of term to index
     poly_terms = []
-    #TODO ??TRY USING LEGENDRE POLYNOMIALS, set of orthogonal polynomial??.
+    
     num_terms = 0
     for currrent_term_degree in range(1,degree_potFunc+1):
         tmp = get_poly_terms(num_dimensions,currrent_term_degree)
         num_terms += len(tmp)
         poly_terms += tmp
 
-    # todo CHECK if the number of poly terms matches num_terms_potFunc
-    # TODO ADD CODE TO ADD JUST ENOUGH PIVOTS TO GET ENOUGH CONSTRAINTS
+    
     min_additional_nodes_set = set()
     additional_constraints_needed = 0
     if num_constraints < num_terms + 2*MIN_ADDITIONAL_NODES*num_pivots: # why"x2" because one constraint for each direction.
@@ -411,7 +403,7 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
         #end inner for through pivots
     #end outer for through pivots
 
-    #TODO ADD NON PIVOT PAIRS AS CONSTRAINTS TOO ?? maybe far too many constraints but necessary for dense, non-segmented graphs
+    
     list_vertex_pair_and_weight = list(set_vertex_pair_and_weight)
     num_list_vertex_pair_and_weight = len(list_vertex_pair_and_weight)
     for vertex_pair_and_weight_idx in range(num_list_vertex_pair_and_weight):
@@ -441,7 +433,7 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
             inv_constaint_vector.append(constr_single_term_value_a - constr_single_term_value_b)
         #end for through the terms of the potential field polynomial function
 
-        #TODO IMPORTANT USE THE TRUE AVERAGE TO FRO DISTANCE, and see the results with this. There can be TWO VARIANTS, compare output
+        
         avg_distance = np.linalg.norm(np.array(vertex_embedding_dict[vertex_1]) - np.array(vertex_embedding_dict[vertex_2]))
         if TRUE_AVG_DIST_IN_POT_FUNC:
             avg_distance = average_toFro_dict[vertex_1][vertex_2]
@@ -482,13 +474,11 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
     constraint_matrix = statModels.add_constant(constraint_matrix) #inserts a column of 1s that represents the bias !!
     bias= 0
 
-    #TODO IF AND ONLY IF, WLS and Lin Regr is the closed form type, then
-    # use sklearn linear regression, ridge regression (to prevent very large weights), can handle LARGER SET of constraints
-    # the sklearn regression does gradient descent and so is not inverting very large matrices.
+    
     if USE_WEIGHTED_LEAST_SQUARES:
         wls_model = statModels.WLS(constraint_targets, constraint_matrix,
                                    weights=constraint_weights)  # use the error as the weight
-        # todo CONSIDER THIS FOR LATER
+        
         # wls_model = statModels.WLS(constraint_targets,constraint_matrix, weights=np.abs(constraint_targets))
         results = wls_model.fit()
         resultant_weights = results.params
@@ -520,7 +510,6 @@ def main_fastmap_dirGraph_embedder(in_graph, max_dimensions, embedding_distance_
 #===================================================================
 
 
-#todo TRY just adding the polynomial to the average embedding approach
 
 if __name__ == "__main__":
 
